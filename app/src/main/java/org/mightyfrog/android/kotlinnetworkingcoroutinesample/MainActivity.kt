@@ -5,19 +5,18 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import kotlinx.coroutines.experimental.DefaultDispatcher
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.withContext
+import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.experimental.android.Main
 import org.json.JSONObject
 import java.net.URL
 import java.util.*
+import kotlin.coroutines.experimental.CoroutineContext
 
 /**
  * @author Shigehiro Soejima
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CoroutineScope {
+    private val job = Job()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,21 +24,27 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener {
-//            launch(UI) {
-//                activityCircle.visibility = View.VISIBLE
-//                textView.text = parse(load().await()).await()
-//                activityCircle.visibility = View.GONE
-//            }
+            getData()
 
-            launch(UI) {
-                activityCircle.visibility = View.VISIBLE
-                textView.text = withContext(DefaultDispatcher) { parse2(load2()) }
-                activityCircle.visibility = View.GONE
-            }
+//            getData2()
         }
     }
 
-    private fun load() = async {
+    override fun onDestroy() {
+        job.cancel()
+
+        super.onDestroy()
+    }
+
+    override val coroutineContext: CoroutineContext get() = Dispatchers.Main + job
+
+    private fun getData() = launch(Dispatchers.Main) {
+        activityCircle.visibility = View.VISIBLE
+        textView.text = parse(load().await()).await()
+        activityCircle.visibility = View.GONE
+    }
+
+    private fun load() = async(Dispatchers.IO) {
         val url = URL("https://www.reddit.com/.json")
         url.openStream().use { stream ->
             return@async Scanner(stream).useDelimiter("\\A").next()
@@ -56,6 +61,14 @@ class MainActivity : AppCompatActivity() {
                     .append(("\n"))
         }
         return@async sb.toString()
+    }
+
+    //
+
+    private fun getData2() = launch(Dispatchers.Main) {
+        activityCircle.visibility = View.VISIBLE
+        textView.text = withContext(Dispatchers.Default) { parse2(load2()) }
+        activityCircle.visibility = View.GONE
     }
 
     private fun load2(): String {
