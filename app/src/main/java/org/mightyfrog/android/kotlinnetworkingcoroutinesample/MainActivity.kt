@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main + job
 
-    private fun getData() = launch(Dispatchers.Main) {
+    private fun getData() = launch {
         activityCircle.visibility = View.VISIBLE
         textView.text = parse(load().await()).await()
         activityCircle.visibility = View.GONE
@@ -65,9 +65,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
 
     //
 
-    private fun getData2() = launch(Dispatchers.Main) {
+    private fun getData2() = launch {
         activityCircle.visibility = View.VISIBLE
-        textView.text = withContext(Dispatchers.Default) { parse2(load2()) }
+        textView.text = withContext(Dispatchers.IO) { parse2(load2()) }
         activityCircle.visibility = View.GONE
     }
 
