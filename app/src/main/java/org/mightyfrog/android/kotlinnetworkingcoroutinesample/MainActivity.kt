@@ -5,18 +5,19 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import kotlinx.coroutines.experimental.*
-import kotlinx.coroutines.experimental.android.Main
+import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.net.URL
 import java.util.*
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.CoroutineContext
 
 /**
  * @author Shigehiro Soejima
  */
 class MainActivity : AppCompatActivity(), CoroutineScope {
     private val job = Job()
+
+    override val coroutineContext: CoroutineContext get() = Dispatchers.Main + job
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,22 +37,20 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
         super.onDestroy()
     }
 
-    override val coroutineContext: CoroutineContext get() = Dispatchers.Main + job
-
     private fun getData() = launch {
         activityCircle.visibility = View.VISIBLE
-        textView.text = parse(load().await()).await()
+        textView.text = parseAsync(loadAsync().await()).await()
         activityCircle.visibility = View.GONE
     }
 
-    private fun load() = async(Dispatchers.IO) {
+    private fun loadAsync() = async(Dispatchers.IO) {
         val url = URL("https://www.reddit.com/.json")
         url.openStream().use { stream ->
             return@async Scanner(stream).useDelimiter("\\A").next()
         }
     }
 
-    private fun parse(json: String) = async {
+    private fun parseAsync(json: String) = async {
         val jo = JSONObject(json).getJSONObject("data").getJSONArray("children")
         val len = jo.length()
         val sb = StringBuilder()
